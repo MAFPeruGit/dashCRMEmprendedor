@@ -24,7 +24,7 @@
     }
 
     header img {
-      width: 40px;
+      width: 80px;
       margin-right: 10px;
     }
 
@@ -56,7 +56,7 @@
     .metric {
       font-size: 2rem;
       font-weight: bold;
-      color: #E60012;
+      color: var(--maf-red);
     }
 
     .meta-ok {
@@ -99,7 +99,7 @@
       display: flex;
       justify-content: space-between;
       margin: 8px 0;
-      background: linear-gradient(to right, #E60012 var(--value, 50%), #f1f1f1 var(--value, 50%));
+      background: linear-gradient(to right, var(--maf-red) var(--value, 50%), #f1f1f1 var(--value, 50%));
       border-radius: 8px;
       padding: 8px 10px;
       color: white;
@@ -146,36 +146,72 @@
     .legend-item { display: flex; align-items: center; gap: 8px; }
     .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
 
+      /* --- Brand variables (MAF) --- */
+    :root{ --maf-red:#EB0A1E; --maf-gray:#4A4A4A; --maf-cool:#E9EAE8; --maf-sky:#82CEE6; }
+
+    /* Tooltip + header logo overrides */
+    header img.logo{ height:34px; }
+    .info-wrap{display:inline-flex; align-items:center; gap:6px;}
+    .info{display:inline-flex; width:20px; height:20px; border-radius:50%; background:var(--maf-sky); color:#073b4c; align-items:center; justify-content:center; font-size:12px; cursor:pointer;}
+    .tooltip{ position:relative; display:inline-block; }
+    .tooltip .tip-content{ position:absolute; left:0; top:28px; min-width:260px; background:#fff; color:#333; border:1px solid #e5e7eb; box-shadow:0 8px 24px rgba(0,0,0,.1); border-radius:12px; padding:12px 14px; font-size:.9rem; line-height:1.35; z-index:5; opacity:0; transform:translateY(-6px); pointer-events:none; transition:all .18s ease; }
+    .tooltip.open .tip-content, .tooltip:hover .tip-content{ opacity:1; transform:translateY(0); pointer-events:auto; }
+
+    select:focus{ outline: 2px solid var(--maf-sky); border-color: var(--maf-sky);} 
+
   </style>
 </head>
 <body>
   <header>
-    <img src="https://cdn-icons-png.flaticon.com/512/4341/4341139.png" alt="icono" />
+    <img class="logo" src="https://i.imgur.com/mhAsug9.png" alt="MAF Perú"/>
     <h1>Canales de captación y tiempos promedio</h1>
   </header>
 
   <div class="filters">
-    <select id="origen">
+    <select id="origen" title="Origen">
       <option>Meta</option>
       <option>Landing</option>
       <option>TikTok</option>
     </select>
 
-    <select id="periodo">
+    <select id="periodo" title="Periodo">
       <option>Últimos 15 días</option>
       <option>Últimos 30 días</option>
+    </select>
+
+    <select id="etapa" title="Etapa">
+      <option>Todas las etapas</option>
+      <option>Ingreso</option>
+      <option>Lead captado</option>
+      <option>Contacto / Calificación</option>
+      <option>Cita / Cotización</option>
+      <option>Visita de negocio</option>
+      <option>Solicitud Bantotal</option>
+      <option>Cierre de crédito</option>
+      <option>Desembolsado</option>
+      <option>Aprobados</option>
     </select>
   </div>
 
   <div class="dashboard">
     <div class="card">
-      <h3>Tiempo total promedio</h3>
+      <h3 class="info-wrap">Tiempo total promedio
+        <span class="tooltip">
+          <span class="info">i</span>
+          <span class="tip-content">Tiempo <strong>total</strong> calculado desde <em>Ingreso</em> hasta <em>Cierre de crédito</em> (incluye todas las etapas del flujo).</span>
+        </span>
+      </h3>
       <p class="metric" id="tiempo-total">20 días</p>
       <p class="meta-ok">Meta ≤ 15 días ✔️</p>
     </div>
 
     <div class="card">
-      <h3>Tiempo promedio por etapa</h3>
+      <h3 class="info-wrap">Tiempo promedio por etapa
+        <span class="tooltip">
+          <span class="info">i</span>
+          <span class="tip-content">Promedio del <strong>tiempo de cambio</strong> entre etapas consecutivas (p.ej., de Contacto a Cita). Útil para detectar cuellos de botella específicos.</span>
+        </span>
+      </h3>
       <p class="metric" id="tiempo-etapa">3 días</p>
       <p class="meta-ok">Meta ≤ 15 días ✔️</p>
     </div>
@@ -186,7 +222,7 @@
       <p class="meta-ok">Progreso de meta alcanzado ⬆️</p>
     </div>
 
-    <div class="card">
+    <div class="card" style="grid-row: span 2;">
       <h3>Leads recibidos</h3>
       <div id="funnel" class="funnel"></div>
       <div class="funnel-legend" id="funnel-legend"></div>
@@ -206,8 +242,14 @@
       <h3>Distribución de Leads por Canal</h3>
       <div class="chart-placeholder">Gráfico de dona (Landing, Meta, TikTok)</div>
     </div>
+
+    <div class="card" style="align-self: start;">
+      <h3>Desempeño por Analista</h3>
+      <canvas id="analistaChart" height="220"></canvas>
+    </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script>
     // Simular animación de actualización de datos
     const tiempoTotal = document.getElementById('tiempo-total');
@@ -221,7 +263,7 @@
     }, 4000);
       // ---- Funnel data & renderer ----
     const funnelData = [
-      { label: 'Leads recibidos', value: 550, color: '#E60012' },
+      { label: 'Leads recibidos', value: 550, color: 'var(--maf-red)' },
       { label: 'Contactados', value: 380, color: '#ff5a5f' },
       { label: 'No contactados', value: 170, color: '#f39c9f' },
       { label: 'Derivados', value: 120, color: '#cfd8dc' },
@@ -300,6 +342,71 @@
 
     window.addEventListener('resize', () => renderFunnel('funnel','funnel-legend', funnelData));
     renderFunnel('funnel','funnel-legend', funnelData);
+
+    // Gráfico de dona por canal
+    const donut = document.querySelector('.chart-placeholder');
+    if (donut) {
+      const canvas = document.createElement('canvas');
+      canvas.id = 'donutChart';
+      donut.replaceWith(canvas);
+
+      new Chart(canvas.getContext('2d'), {
+        type: 'doughnut',
+        data: {
+          labels: ['Landing', 'Meta', 'TikTok'],
+          datasets: [{
+            label: 'Leads',
+            data: [45, 35, 20],
+            backgroundColor: ['#E9EAE8', '#EB0A1E', '#82CEE6'],
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          cutout: '65%',
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { color: '#4A4A4A' }
+            }
+          }
+        }
+      });
+    }
+
+    // Gráfico de barras por analista
+    const ctxAnalista = document.getElementById('analistaChart');
+    new Chart(ctxAnalista, {
+      type: 'bar',
+      data: {
+        labels: ['Pepi', 'Frank', 'Aproxiado', 'Luis'],
+        datasets: [{
+          label: 'Días promedio',
+          data: [9, 18, 6, 3],
+          backgroundColor: function(context) {
+            const value = context.raw;
+            if (value <= 4) return '#EB0A1E';
+            if (value <= 9) return '#FFC107';
+            return '#2E7D32';
+          },
+          borderRadius: 10
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          x: {
+            ticks: { color: '#4A4A4A' }
+          },
+          y: {
+            ticks: { color: '#4A4A4A' }
+          }
+        }
+      }
+    });
   </script>
 </body>
 </html>
