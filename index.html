@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Canales de Captación y Tiempos Promedio</title>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f8f9fa;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: #333;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 20px 0;
+    }
+
+    header img {
+      width: 40px;
+      margin-right: 10px;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      color: #222;
+    }
+
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      width: 90%;
+      max-width: 1200px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+    }
+
+    .metric {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #E60012;
+    }
+
+    .meta-ok {
+      color: #28a745;
+      font-weight: 600;
+    }
+
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    select, input {
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 0.9rem;
+    }
+
+    .chart-placeholder {
+      height: 250px;
+      background: repeating-linear-gradient(
+        45deg,
+        #eee,
+        #eee 10px,
+        #f9f9f9 10px,
+        #f9f9f9 20px
+      );
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #777;
+    }
+
+    .funnel-step {
+      display: flex;
+      justify-content: space-between;
+      margin: 8px 0;
+      background: linear-gradient(to right, #E60012 var(--value, 50%), #f1f1f1 var(--value, 50%));
+      border-radius: 8px;
+      padding: 8px 10px;
+      color: white;
+      font-weight: 500;
+    }
+
+    .bar {
+      background-color: #ccc;
+      border-radius: 5px;
+      overflow: hidden;
+      height: 10px;
+      margin: 5px 0;
+    }
+
+    .bar-inner {
+      height: 100%;
+      background-color: #2E7D32;
+      transition: width 0.5s ease;
+    }
+
+    @media (max-width: 768px) {
+      .metric {
+        font-size: 1.5rem;
+      }
+    }
+      /* --- Funnel styles --- */
+    .funnel {
+      position: relative;
+      width: 100%;
+      height: 320px;
+    }
+    .funnel svg { width: 100%; height: 100%; }
+    .funnel .label {
+      font-size: 12px;
+      fill: #333;
+    }
+    .funnel-legend {
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 12px;
+      font-size: 0.9rem;
+    }
+    .legend-item { display: flex; align-items: center; gap: 8px; }
+    .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+
+  </style>
+</head>
+<body>
+  <header>
+    <img src="https://cdn-icons-png.flaticon.com/512/4341/4341139.png" alt="icono" />
+    <h1>Canales de captación y tiempos promedio</h1>
+  </header>
+
+  <div class="filters">
+    <select id="origen">
+      <option>Meta</option>
+      <option>Landing</option>
+      <option>TikTok</option>
+    </select>
+
+    <select id="periodo">
+      <option>Últimos 15 días</option>
+      <option>Últimos 30 días</option>
+    </select>
+  </div>
+
+  <div class="dashboard">
+    <div class="card">
+      <h3>Tiempo total promedio</h3>
+      <p class="metric" id="tiempo-total">20 días</p>
+      <p class="meta-ok">Meta ≤ 15 días ✔️</p>
+    </div>
+
+    <div class="card">
+      <h3>Tiempo promedio por etapa</h3>
+      <p class="metric" id="tiempo-etapa">3 días</p>
+      <p class="meta-ok">Meta ≤ 15 días ✔️</p>
+    </div>
+
+    <div class="card">
+      <h3>Meta de desembolsos</h3>
+      <p class="metric">3 alcanzados</p>
+      <p class="meta-ok">Progreso de meta alcanzado ⬆️</p>
+    </div>
+
+    <div class="card">
+      <h3>Leads recibidos</h3>
+      <div id="funnel" class="funnel"></div>
+      <div class="funnel-legend" id="funnel-legend"></div>
+    </div>
+
+    <div class="card">
+      <h3>Tiempos promedio por etapa</h3>
+      <div>Ingreso <div class="bar"><div class="bar-inner" style="width: 20%"></div></div></div>
+      <div>Lead captado <div class="bar"><div class="bar-inner" style="width: 30%"></div></div></div>
+      <div>Contacto / Calificación <div class="bar"><div class="bar-inner" style="width: 40%"></div></div></div>
+      <div>Cita / Cotización <div class="bar"><div class="bar-inner" style="width: 50%"></div></div></div>
+      <div>Visita de negocio <div class="bar"><div class="bar-inner" style="width: 80%"></div></div></div>
+      <div>Solicitud Bantotal <div class="bar"><div class="bar-inner" style="width: 100%"></div></div></div>
+    </div>
+
+    <div class="card">
+      <h3>Distribución de Leads por Canal</h3>
+      <div class="chart-placeholder">Gráfico de dona (Landing, Meta, TikTok)</div>
+    </div>
+  </div>
+
+  <script>
+    // Simular animación de actualización de datos
+    const tiempoTotal = document.getElementById('tiempo-total');
+    const tiempoEtapa = document.getElementById('tiempo-etapa');
+
+    setInterval(() => {
+      const total = Math.floor(Math.random() * 10) + 15;
+      const etapa = Math.floor(Math.random() * 5) + 2;
+      tiempoTotal.textContent = `${total} días`;
+      tiempoEtapa.textContent = `${etapa} días`;
+    }, 4000);
+      // ---- Funnel data & renderer ----
+    const funnelData = [
+      { label: 'Leads recibidos', value: 550, color: '#E60012' },
+      { label: 'Contactados', value: 380, color: '#ff5a5f' },
+      { label: 'No contactados', value: 170, color: '#f39c9f' },
+      { label: 'Derivados', value: 120, color: '#cfd8dc' },
+      { label: 'Solicitud Bantotal', value: 90, color: '#2E7D32' },
+      { label: 'Desembolsado', value: 60, color: '#4CAF50' },
+      { label: 'Aprobados', value: 50, color: '#1B5E20' }
+    ];
+
+    function renderFunnel(containerId, legendId, data){
+      const container = document.getElementById(containerId);
+      const legend = document.getElementById(legendId);
+      container.innerHTML = '';
+      legend.innerHTML = '';
+
+      const svgNS = 'http://www.w3.org/2000/svg';
+      const svg = document.createElementNS(svgNS, 'svg');
+      container.appendChild(svg);
+
+      const padding = 10;
+      const width = container.clientWidth - padding * 2;
+      const height = container.clientHeight - padding * 2;
+
+      const max = Math.max(...data.map(d => d.value));
+      const stepH = height / data.length;
+
+      data.forEach((d, i) => {
+        const topW = width * (1 - i / (data.length * 1.4));
+        const bottomW = width * (1 - (i + 1) / (data.length * 1.4));
+        const scale = d.value / max; // scale width by value so it feels data-driven
+        const tW = topW * (0.6 + 0.4 * scale);
+        const bW = Math.max(20, bottomW * (0.6 + 0.4 * scale));
+
+        const x = (container.clientWidth - tW) / 2;
+        const y = padding + i * stepH;
+
+        const points = [
+          [x, y],
+          [x + tW, y],
+          [container.clientWidth / 2 + bW / 2, y + stepH],
+          [container.clientWidth / 2 - bW / 2, y + stepH]
+        ]
+          .map(p => p.join(',')).join(' ');
+
+        const poly = document.createElementNS(svgNS, 'polygon');
+        poly.setAttribute('points', points);
+        poly.setAttribute('fill', d.color);
+        poly.setAttribute('opacity', 0.9);
+        poly.setAttribute('stroke', '#ffffff');
+        poly.setAttribute('stroke-width', 2);
+        svg.appendChild(poly);
+
+        // label to the left
+        const text = document.createElementNS(svgNS, 'text');
+        text.setAttribute('x', 16);
+        text.setAttribute('y', y + stepH / 2 + 4);
+        text.setAttribute('class', 'label');
+        text.textContent = `${d.label}`;
+        svg.appendChild(text);
+
+        // value to the right
+        const textR = document.createElementNS(svgNS, 'text');
+        textR.setAttribute('x', container.clientWidth - 16);
+        textR.setAttribute('y', y + stepH / 2 + 4);
+        textR.setAttribute('text-anchor', 'end');
+        textR.setAttribute('class', 'label');
+        textR.textContent = `${d.value}`;
+        svg.appendChild(textR);
+
+        // legend
+        const li = document.createElement('div');
+        li.className = 'legend-item';
+        li.innerHTML = `<span class="legend-dot" style="background:${d.color}"></span><span>${d.label}: <strong>${d.value}</strong></span>`;
+        legend.appendChild(li);
+      });
+    }
+
+    window.addEventListener('resize', () => renderFunnel('funnel','funnel-legend', funnelData));
+    renderFunnel('funnel','funnel-legend', funnelData);
+  </script>
+</body>
+</html>
